@@ -1,62 +1,30 @@
 use std::fs;
 
-use x11rb::{
-    connection::Connection,
-    protocol::xproto::{intern_atom, Atom, AtomEnum, ConnectionExt, InternAtomRequest},
-};
+use x11rb::connection::Connection;
 
 mod atoms;
+mod x11;
+mod xwayland;
 
-fn is_gamescope_xwayland() {}
-
-/// Returns true if the given window has the given property
-fn has_property<F>(conn: F, window_id: u32, key: &str) -> Result<bool, Box<dyn std::error::Error>>
-where
-    F: Connection,
+// Returns instances to all available Gamescope XWaylands
+pub fn discover_gamescope_xwaylands() -> Result<Vec<xwayland::XWayland>, Box<dyn std::error::Error>>
 {
-    Ok(get_property(conn, window_id, key)?.is_some())
-}
+    let gamescope_displays = discover_gamescope_displays()?;
+    let xwaylands = gamescope_displays
+        .iter()
+        .map(|display_name| xwayland::XWayland::new(display_name.into()))
+        .collect();
 
-/// Returns the value of the given x property on the given window.
-/// TODO: We assume everything is a cardinal
-fn get_property<F>(
-    conn: F,
-    window_id: u32,
-    key: &str,
-) -> Result<Option<Vec<u32>>, Box<dyn std::error::Error>>
-where
-    F: Connection,
-{
-    let atom = intern_atom(&conn, false, key.as_bytes())?;
-    let atom = atom.reply()?;
-
-    // Request the property from the X server
-    let response = conn.get_property(
-        false,
-        window_id,
-        atom.atom,
-        AtomEnum::CARDINAL,
-        0,
-        u32::max_value(),
-    );
-    let value = response?.reply()?;
-
-    // Check to see if there was a value returned
-    if value.value_len == 0 {
-        return Ok(None);
-    }
-
-    let values: Vec<u32> = value.value32().unwrap().collect();
-    Ok(Some(values))
+    Ok(xwaylands)
 }
 
 /// Returns all gamescope xwayland names (E.g. [":0", ":1"])
 pub fn discover_gamescope_displays() -> Result<Vec<String>, Box<dyn std::error::Error>> {
     // Discover all x11 displays
-    let x11_displays = discover_x11_displays();
+    let x11_displays = discover_x11_displays()?;
 
     // Array of gamescope xwayland displays
-    let gamescope_displays: Vec<String> = Vec::new();
+    let mut gamescope_displays: Vec<String> = Vec::new();
 
     // Check to see if the root window of these displays has gamescope-specific properties
     for display in x11_displays {
@@ -73,15 +41,18 @@ pub fn discover_gamescope_displays() -> Result<Vec<String>, Box<dyn std::error::
 
         let root_window_id = screen.root;
 
-        //get_property(conn, root_window_id, "GAMESCOPE_FOCUSABLE_WINDOWS");
-        get_property(conn, root_window_id, atoms::FOCUSABLE_WINDOWS);
+        // Add the display name to the list of gamescope displays
+        if x11::is_gamescope_xwayland(conn, root_window_id)? {
+            println!("Found Gamescope xwayland: {}", display);
+            gamescope_displays.push(display);
+        }
     }
 
     Ok(gamescope_displays)
 }
 
 /// Returns all x11 display names (E.g. [":0", ":1"])
-pub fn discover_x11_displays() -> Vec<String> {
+pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>> {
     println!("Discovering gamescope displays!");
 
     // Array of X11 displays
@@ -89,11 +60,11 @@ pub fn discover_x11_displays() -> Vec<String> {
 
     // X11 displays have a corresponding socket in /tmp/.X11-unix
     // The sockets are named like: X0, X1, X2, etc.
-    let sockets = fs::read_dir("/tmp/.X11-unix").unwrap();
+    let sockets = fs::read_dir("/tmp/.X11-unix")?;
 
     // Loop through each socket file and derive the display number
     for socket in sockets {
-        let dir_entry = &socket.unwrap();
+        let dir_entry = &socket?;
         let path = &dir_entry.path();
 
         // Get the name of the socket (E.g. "X0") and get its suffix
@@ -111,7 +82,7 @@ pub fn discover_x11_displays() -> Vec<String> {
         display_names.push(format!(":{}", suffix));
     }
 
-    display_names
+    Ok(display_names)
 }
 
 #[cfg(test)]
@@ -119,7 +90,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_discover_gamescope_displayed() {
-        discover_gamescope_displays();
+    fn test_discover_gamescope_displays() {
+        let xwaylands = discover_gamescope_xwaylands().unwrap();
+        for mut xwayland in xwaylands {
+            xwayland.connect().unwrap();
+            //xwayland.get_focusable_apps();
+            let is_primary = xwayland.is_primary_instance().unwrap();
+            println!(
+                "Found XWayland: {:?} {}",
+                xwayland.get_name(),
+                if is_primary { "(primary)" } else { "" }
+            );
+        }
     }
 }
