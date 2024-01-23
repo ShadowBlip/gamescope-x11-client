@@ -87,6 +87,8 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
 
 #[cfg(test)]
 mod tests {
+    use std::thread;
+
     use super::*;
 
     #[test]
@@ -101,6 +103,10 @@ mod tests {
                 xwayland.get_name(),
                 if is_primary { "(primary)" } else { "" }
             );
+
+            xwayland.listen_for_property_changes().unwrap();
+
+            thread::sleep_ms(5000);
         }
     }
 }

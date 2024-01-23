@@ -1,7 +1,11 @@
-use std::borrow::Borrow;
+use std::sync::mpsc::{self, Receiver};
+use std::thread::{self, JoinHandle};
+use std::{borrow::Borrow, sync::mpsc::Sender};
 
 use x11rb::{
-    connection::Connection, protocol::xproto::ConnectionExt, rust_connection::RustConnection,
+    connection::Connection,
+    protocol::xproto::{ChangeWindowAttributesAux, ConnectionExt, EventMask},
+    rust_connection::RustConnection,
 };
 
 use crate::{
@@ -68,6 +72,51 @@ impl XWayland {
         self.conn = Some(conn);
 
         Ok(())
+    }
+
+    /// Listen for events and shit
+    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    pub fn listen_for_property_changes(
+        &self,
+    ) -> Result<(JoinHandle<()>, Receiver<String>), Box<dyn std::error::Error>> {
+        // Create a new connection for the new thread
+        let (conn, _) = x11rb::connect(Some(self.name.as_str()))?;
+
+        // Set the event mask to start listening for events
+        let mut attrs = ChangeWindowAttributesAux::new();
+        attrs.event_mask = Some(EventMask::PROPERTY_CHANGE);
+        let result = conn.change_window_attributes(self.root_window_id, &attrs)?;
+        result.check()?;
+
+        // Create a channel to send update messages through
+        let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
+
+        // Spawn a thread to listen for events
+        let child = thread::spawn(move || {
+            println!("Started event listener thread");
+            // Loop and listen for events
+            loop {
+                let event = conn.wait_for_event().unwrap();
+                println!("Got event: {:?}", event);
+
+                // We only care about property change events
+                let event = if let x11rb::protocol::Event::PropertyNotify(event) = event {
+                    Some(event)
+                } else {
+                    None
+                };
+                if event.is_none() {
+                    continue;
+                }
+                let event = event.unwrap();
+                let atom = conn.get_atom_name(event.atom).unwrap().reply().unwrap();
+                let property = String::from_utf8(atom.name).unwrap();
+
+                tx.send(property).unwrap();
+            }
+        });
+
+        Ok((child, rx))
     }
 
     /// Returns true if this instance is the primary Gamescope xwayland instance
