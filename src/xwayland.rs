@@ -304,7 +304,7 @@ pub trait Primary {
     /// Focuses the given window
     fn set_baselayer_window(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
     /// Removes the baselayer property to un-focus windows
-    fn remove_baselayer_window(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
+    fn remove_baselayer_window(&self) -> Result<(), Box<dyn std::error::Error>>;
     /// Request a screenshot from Gamescope
     fn request_screenshot(&self) -> Result<(), Box<dyn std::error::Error>>;
 }
@@ -449,8 +449,8 @@ impl Primary for XWayland {
         )
     }
 
-    fn remove_baselayer_window(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>> {
-        self.remove_xprop(window_id, GamescopeAtom::BaselayerWindow)
+    fn remove_baselayer_window(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.remove_xprop(self.root_window_id, GamescopeAtom::BaselayerWindow)
     }
 
     fn request_screenshot(&self) -> Result<(), Box<dyn std::error::Error>> {

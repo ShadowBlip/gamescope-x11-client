@@ -2,9 +2,9 @@ use std::fs;
 
 use x11rb::connection::Connection;
 
-mod atoms;
+pub mod atoms;
 mod x11;
-mod xwayland;
+pub mod xwayland;
 
 // Returns instances to all available Gamescope XWaylands
 pub fn discover_gamescope_xwaylands() -> Result<Vec<xwayland::XWayland>, Box<dyn std::error::Error>>
@@ -104,9 +104,7 @@ mod tests {
                 if is_primary { "(primary)" } else { "" }
             );
 
-            xwayland.listen_for_property_changes().unwrap();
-
-            thread::sleep_ms(5000);
+            //xwayland.listen_for_property_changes().unwrap();
         }
     }
 }
