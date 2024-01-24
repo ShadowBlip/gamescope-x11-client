@@ -93,11 +93,13 @@ impl XWayland {
 
         // Spawn a thread to listen for events
         let child = thread::spawn(move || {
-            println!("Started event listener thread");
             // Loop and listen for events
             loop {
-                let event = conn.wait_for_event().unwrap();
-                println!("Got event: {:?}", event);
+                let event = conn.wait_for_event();
+                if event.is_err() {
+                    break;
+                }
+                let event = event.unwrap();
 
                 // We only care about property change events
                 let event = if let x11rb::protocol::Event::PropertyNotify(event) = event {

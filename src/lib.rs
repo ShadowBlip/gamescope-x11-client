@@ -28,22 +28,18 @@ pub fn discover_gamescope_displays() -> Result<Vec<String>, Box<dyn std::error::
 
     // Check to see if the root window of these displays has gamescope-specific properties
     for display in x11_displays {
-        println!("Trying to connect to display: {}", display);
         // Connect to the display
         let result = x11rb::connect(Some(display.as_str()));
         if result.is_err() {
-            println!("Failed to connect to display: {}", display);
             continue;
         }
         let (conn, screen_num) = result.unwrap();
-        println!("Connected to: {}", screen_num);
         let screen = &conn.setup().roots[screen_num];
 
         let root_window_id = screen.root;
 
         // Add the display name to the list of gamescope displays
         if x11::is_gamescope_xwayland(conn, root_window_id)? {
-            println!("Found Gamescope xwayland: {}", display);
             gamescope_displays.push(display);
         }
     }
@@ -53,8 +49,6 @@ pub fn discover_gamescope_displays() -> Result<Vec<String>, Box<dyn std::error::
 
 /// Returns all x11 display names (E.g. [":0", ":1"])
 pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    println!("Discovering gamescope displays!");
-
     // Array of X11 displays
     let mut display_names: Vec<String> = Vec::new();
 

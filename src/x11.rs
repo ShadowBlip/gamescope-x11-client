@@ -107,6 +107,7 @@ where
 }
 
 /// Append the value(s) of the given x property on the given window.
+#[allow(dead_code)]
 pub fn append_property<F>(
     conn: F,
     window_id: u32,
@@ -120,6 +121,7 @@ where
 }
 
 /// Prepend the value(s) of the given x property on the given window.
+#[allow(dead_code)]
 pub fn prepend_property<F>(
     conn: F,
     window_id: u32,
@@ -180,6 +182,7 @@ where
 }
 
 /// Returns a list of all available properties on the given window
+#[allow(dead_code)]
 pub fn list_properties<F>(
     conn: F,
     window_id: u32,
@@ -200,6 +203,7 @@ where
 }
 
 /// Uses XRes to determine the given Window's PID
+#[allow(dead_code)]
 pub fn get_window_pids<F>(conn: F, window_id: u32) -> Result<Vec<u32>, Box<dyn std::error::Error>>
 where
     F: Connection,
@@ -222,6 +226,7 @@ where
 }
 
 // Set input focus on the given window
+#[allow(dead_code)]
 pub fn set_input_focus<F>(conn: F, window_id: u32) -> Result<(), Box<dyn std::error::Error>>
 where
     F: Connection,

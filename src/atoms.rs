@@ -2,6 +2,8 @@
 pub enum GamescopeAtom {
     #[strum(serialize = "STEAM_BIGPICTURE")]
     Steam,
+    #[strum(serialize = "GAMESCOPE_INPUT_COUNTER")]
+    InputCounter,
     #[strum(serialize = "GAMESCOPE_FOCUSED_APP")]
     FocusedApp,
     #[strum(serialize = "GAMESCOPE_FOCUSED_APP_GFX")]
