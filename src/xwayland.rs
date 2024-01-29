@@ -74,10 +74,48 @@ impl XWayland {
         Ok(())
     }
 
-    /// Listen for events and shit
-    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    /// Tries to discover the process IDs that are associated with the given
+    /// window.
+    pub fn get_pids_for_window(
+        &self,
+        window_id: u32,
+    ) -> Result<Vec<u32>, Box<dyn std::error::Error>> {
+        let conn = self.get_connection()?;
+        x11::get_window_pids(conn, window_id)
+    }
+
+    /// Returns the window id(s) for the given process ID.
+    pub fn get_windows_for_pid(&self, pid: u32) -> Result<Vec<u32>, Box<dyn std::error::Error>> {
+        // Get all windows from the root window to search for the one with this
+        // process ID.
+        let all_windows = self.get_all_windows(self.root_window_id)?;
+        let window_ids = all_windows
+            .into_iter()
+            .filter(|window_id| {
+                let window_pid = self
+                    .get_window_pid(*window_id)
+                    .unwrap_or_default()
+                    .unwrap_or_default();
+                pid == window_pid
+            })
+            .collect();
+        Ok(window_ids)
+    }
+
+    /// Listen for property changes on the root window
     pub fn listen_for_property_changes(
         &self,
+    ) -> Result<(JoinHandle<()>, Receiver<String>), Box<dyn std::error::Error>> {
+        self.listen_for_window_property_changes(self.root_window_id)
+    }
+
+    /// Listen for events and property changes on the given window. Returns a
+    /// join handle of the listening thread and a receiver channel that can be
+    /// used to receive property changes.
+    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    pub fn listen_for_window_property_changes(
+        &self,
+        window_id: u32,
     ) -> Result<(JoinHandle<()>, Receiver<String>), Box<dyn std::error::Error>> {
         // Create a new connection for the new thread
         let (conn, _) = x11rb::connect(Some(self.name.as_str()))?;
@@ -85,7 +123,7 @@ impl XWayland {
         // Set the event mask to start listening for events
         let mut attrs = ChangeWindowAttributesAux::new();
         attrs.event_mask = Some(EventMask::PROPERTY_CHANGE);
-        let result = conn.change_window_attributes(self.root_window_id, &attrs)?;
+        let result = conn.change_window_attributes(window_id, &attrs)?;
         result.check()?;
 
         // Create a channel to send update messages through
@@ -225,6 +263,14 @@ impl XWayland {
         x11::remove_property(conn, window_id, key.to_string().as_str())?;
 
         Ok(())
+    }
+
+    /// Returns the process ID of the given window from the '_NET_WM_PID' atom
+    pub fn get_window_pid(
+        &self,
+        window_id: u32,
+    ) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        self.get_one_xprop(window_id, GamescopeAtom::NetWmPID)
     }
 
     /// Returns the currently set app ID on the given window

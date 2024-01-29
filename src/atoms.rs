@@ -1,5 +1,7 @@
 #[derive(Debug, strum_macros::Display)]
 pub enum GamescopeAtom {
+    #[strum(serialize = "_NET_WM_PID")]
+    NetWmPID,
     #[strum(serialize = "STEAM_BIGPICTURE")]
     Steam,
     #[strum(serialize = "GAMESCOPE_INPUT_COUNTER")]
