@@ -162,7 +162,7 @@ impl XWayland {
     /// Returns true if this instance is the primary Gamescope xwayland instance
     pub fn is_primary_instance(&self) -> Result<bool, Box<dyn std::error::Error>> {
         let root_id = self.root_window_id;
-        self.has_xprop(root_id, GamescopeAtom::FocusableWindows)
+        self.has_xprop(root_id, GamescopeAtom::KeyboardFocusDisplay)
     }
 
     /// Returns the root window ID of the xwayland instance

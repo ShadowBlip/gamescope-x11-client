@@ -16,6 +16,8 @@ pub enum GamescopeAtom {
     FocusableApps,
     #[strum(serialize = "GAMESCOPE_FOCUSABLE_WINDOWS")]
     FocusableWindows,
+    #[strum(serialize = "GAMESCOPE_KEYBOARD_FOCUS_DISPLAY")]
+    KeyboardFocusDisplay,
     #[strum(serialize = "GAMESCOPE_CURSOR_VISIBLE_FEEDBACK")]
     CursorVisibleFeedback,
     #[strum(serialize = "GAMESCOPE_EXTERNAL_OVERLAY")]
