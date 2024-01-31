@@ -49,6 +49,15 @@ impl XWayland {
         self.name.clone()
     }
 
+    /// Returns true if the XWayland connection exists
+    pub fn is_connected(&self) -> bool {
+        if let Ok(conn) = self.get_connection() {
+            conn.get_input_focus().is_ok()
+        } else {
+            false
+        }
+    }
+
     /// Borrow the connection to the XWayland server. Will error if not yet
     /// connected.
     fn get_connection(&self) -> Result<&RustConnection, Box<dyn std::error::Error>> {
@@ -65,7 +74,7 @@ impl XWayland {
     pub fn connect(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         // Connect to the display
         let (conn, screen_num) = x11rb::connect(Some(self.name.as_str()))?;
-        println!("Connected to: {}", screen_num);
+        log::info!("Connected to: {}", screen_num);
         let screen = &conn.setup().roots[screen_num];
 
         self.root_window_id = screen.root;

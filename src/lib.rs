@@ -81,8 +81,6 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
-
     use super::*;
 
     #[test]
