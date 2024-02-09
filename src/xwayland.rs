@@ -2,6 +2,8 @@ use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
 use std::{borrow::Borrow, sync::mpsc::Sender};
 
+use x11rb::protocol::Event;
+use x11rb::rust_connection;
 use x11rb::{
     connection::Connection,
     protocol::xproto::{ChangeWindowAttributesAux, ConnectionExt, EventMask},
@@ -16,6 +18,12 @@ use crate::{
 /// Gamescope is hard-coded to look for STEAM_GAME=769 to determine if it is the
 /// overlay app.
 pub const OVERLAY_APP_ID: u32 = 769;
+
+type WindowChangesCallback<T> = fn(
+    &rust_connection::RustConnection,
+    &Sender<T>,
+    Event,
+) -> Result<(), Box<dyn std::error::Error>>;
 
 // Gamescope blur modes
 pub enum BlurMode {
@@ -118,7 +126,7 @@ impl XWayland {
         self.listen_for_window_property_changes(self.root_window_id)
     }
 
-    /// Listen for events and property changes on the given window. Returns a
+    /// Listen for property changes on the given window. Returns a
     /// join handle of the listening thread and a receiver channel that can be
     /// used to receive property changes.
     /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
@@ -126,17 +134,65 @@ impl XWayland {
         &self,
         window_id: u32,
     ) -> Result<(JoinHandle<()>, Receiver<String>), Box<dyn std::error::Error>> {
+        self.listen_for_window_changes(window_id, EventMask::PROPERTY_CHANGE, |conn, tx, event| {
+            if let x11rb::protocol::Event::PropertyNotify(event) = event {
+                let atom = conn.get_atom_name(event.atom).unwrap().reply().unwrap();
+                let property = String::from_utf8(atom.name).unwrap();
+                tx.send(property).unwrap();
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Listen for window created events on the root window
+    pub fn listen_for_window_created(
+        &self,
+    ) -> Result<(JoinHandle<()>, Receiver<u32>), Box<dyn std::error::Error>> {
+        self.listen_for_window_created_on_window(self.root_window_id)
+    }
+
+    /// Listen for window created event on the given window. Returns a
+    /// join handle of the listening thread and a receiver channel that can be
+    /// used to receive property changes.
+    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    pub fn listen_for_window_created_on_window(
+        &self,
+        window_id: u32,
+    ) -> Result<(JoinHandle<()>, Receiver<u32>), Box<dyn std::error::Error>> {
+        self.listen_for_window_changes(window_id, EventMask::STRUCTURE_NOTIFY, |_, tx, event| {
+            if let x11rb::protocol::Event::CreateNotify(event) = event {
+                tx.send(event.window).unwrap();
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Listen for events and property changes on the given window. Returns a
+    /// join handle of the listening thread and a receiver channel that can be
+    /// used to receive property changes.
+    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    pub fn listen_for_window_changes<T>(
+        &self,
+        window_id: u32,
+        event_mask: EventMask,
+        callback: WindowChangesCallback<T>,
+    ) -> Result<(JoinHandle<()>, Receiver<T>), Box<dyn std::error::Error>>
+    where
+        T: std::marker::Send + 'static,
+    {
         // Create a new connection for the new thread
         let (conn, _) = x11rb::connect(Some(self.name.as_str()))?;
 
         // Set the event mask to start listening for events
         let mut attrs = ChangeWindowAttributesAux::new();
-        attrs.event_mask = Some(EventMask::PROPERTY_CHANGE);
+        attrs.event_mask = Some(event_mask);
         let result = conn.change_window_attributes(window_id, &attrs)?;
         result.check()?;
 
         // Create a channel to send update messages through
-        let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
+        let (tx, rx): (Sender<T>, Receiver<T>) = mpsc::channel();
 
         // Spawn a thread to listen for events
         let child = thread::spawn(move || {
@@ -146,22 +202,10 @@ impl XWayland {
                 if event.is_err() {
                     break;
                 }
-                let event = event.unwrap();
 
-                // We only care about property change events
-                let event = if let x11rb::protocol::Event::PropertyNotify(event) = event {
-                    Some(event)
-                } else {
-                    None
-                };
-                if event.is_none() {
-                    continue;
+                if let Err(err) = callback(&conn, &tx, event.unwrap()) {
+                    log::error!("Error processing window change event: {}", err);
                 }
-                let event = event.unwrap();
-                let atom = conn.get_atom_name(event.atom).unwrap().reply().unwrap();
-                let property = String::from_utf8(atom.name).unwrap();
-
-                tx.send(property).unwrap();
             }
         });
 
