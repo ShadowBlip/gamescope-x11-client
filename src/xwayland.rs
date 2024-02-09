@@ -160,7 +160,7 @@ impl XWayland {
         &self,
         window_id: u32,
     ) -> Result<(JoinHandle<()>, Receiver<u32>), Box<dyn std::error::Error>> {
-        self.listen_for_window_changes(window_id, EventMask::STRUCTURE_NOTIFY, |_, tx, event| {
+        self.listen_for_window_changes(window_id, EventMask::SUBSTRUCTURE_NOTIFY, |_, tx, event| {
             if let x11rb::protocol::Event::CreateNotify(event) = event {
                 tx.send(event.window).unwrap();
             }
