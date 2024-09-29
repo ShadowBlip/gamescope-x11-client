@@ -400,7 +400,11 @@ pub trait Primary {
     fn set_blur_radius(&self, radius: u32) -> Result<(), Box<dyn std::error::Error>>;
     /// Configures Gamescope to allow tearing or not
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>>;
-    /// Returns the currently set manual focus
+    /// Returns the currently set manual app focus
+    fn get_baselayer_app_id(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
+    /// Focuses the app with the given app id
+    fn set_baselayer_app_id(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
+    /// Returns the currently set manual window focus
     fn get_baselayer_window(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
     /// Focuses the given window
     fn set_baselayer_window(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
@@ -535,6 +539,18 @@ impl Primary for XWayland {
             self.root_window_id,
             GamescopeAtom::AllowTearing,
             vec![value],
+        )
+    }
+
+    fn get_baselayer_app_id(&self) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        self.get_one_xprop(self.root_window_id, GamescopeAtom::BaselayerAppId)
+    }
+
+    fn set_baselayer_app_id(&self, app_id: u32) -> Result<(), Box<dyn std::error::Error>> {
+        self.set_xprop(
+            self.root_window_id,
+            GamescopeAtom::BaselayerAppId,
+            vec![app_id],
         )
     }
 

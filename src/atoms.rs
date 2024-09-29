@@ -32,6 +32,8 @@ pub enum GamescopeAtom {
     AllowTearing,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_WINDOW")]
     BaselayerWindow,
+    #[strum(serialize = "GAMESCOPECTRL_BASELAYER_APPID")]
+    BaselayerAppId,
     #[strum(serialize = "GAMESCOPECTRL_REQUEST_SCREENSHOT")]
     RequestScreenshot,
     #[strum(serialize = "STEAM_GAME")]

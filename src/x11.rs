@@ -74,14 +74,7 @@ where
     let atom = atom.reply()?;
 
     // Request the property from the X server
-    let response = conn.get_property(
-        false,
-        window_id,
-        atom.atom,
-        AtomEnum::CARDINAL,
-        0,
-        u32::max_value(),
-    );
+    let response = conn.get_property(false, window_id, atom.atom, AtomEnum::CARDINAL, 0, u32::MAX);
     let value = response?.reply()?;
 
     // Check to see if there was a value returned
