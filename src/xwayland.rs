@@ -404,6 +404,8 @@ pub trait Primary {
     fn get_baselayer_app_id(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
     /// Focuses the app with the given app id
     fn set_baselayer_app_id(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
+    /// Removes the baselayer property to un-focus apps
+    fn remove_baselayer_app_id(&self) -> Result<(), Box<dyn std::error::Error>>;
     /// Returns the currently set manual window focus
     fn get_baselayer_window(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
     /// Focuses the given window
@@ -552,6 +554,10 @@ impl Primary for XWayland {
             GamescopeAtom::BaselayerAppId,
             vec![app_id],
         )
+    }
+
+    fn remove_baselayer_app_id(&self) -> Result<(), Box<dyn std::error::Error>> {
+        self.remove_xprop(self.root_window_id, GamescopeAtom::BaselayerAppId)
     }
 
     fn get_baselayer_window(&self) -> Result<Option<u32>, Box<dyn std::error::Error>> {
