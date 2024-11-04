@@ -1,7 +1,9 @@
+use std::fmt;
 use std::sync::mpsc::{self, Receiver};
 use std::thread::{self, JoinHandle};
 use std::{borrow::Borrow, sync::mpsc::Sender};
 
+use x11rb::protocol::xproto::GetGeometryReply;
 use x11rb::protocol::Event;
 use x11rb::rust_connection;
 use x11rb::{
@@ -30,6 +32,35 @@ pub enum BlurMode {
     Off,
     Cond,
     Always,
+}
+
+// Window lifecycle events
+#[derive(Debug)]
+pub enum WindowLifecycleEvent {
+    Created,
+    Destroyed,
+}
+
+impl fmt::Display for WindowLifecycleEvent {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let output = match self {
+            WindowLifecycleEvent::Created => "Created",
+            WindowLifecycleEvent::Destroyed => "Destroyed",
+        };
+        write!(f, "{}", output)
+    }
+}
+
+impl TryFrom<&str> for WindowLifecycleEvent {
+    type Error = String;
+
+    fn try_from(input: &str) -> Result<Self, Self::Error> {
+        match input {
+            "Created" => Ok(WindowLifecycleEvent::Created),
+            "Destroyed" => Ok(WindowLifecycleEvent::Destroyed),
+            _ => Err(format!("Unknown WindowLifecycleEvent: {}", input)),
+        }
+    }
 }
 
 /// [XWayland] is a handle to a single Gamescope XWayland instance.
@@ -119,6 +150,17 @@ impl XWayland {
         Ok(window_ids)
     }
 
+    /// Gets the geometry of the window
+    pub fn get_geometry_for_window(
+        &self,
+        window_id: u32,
+    ) -> Result<GetGeometryReply, Box<dyn std::error::Error>> {
+        let conn = self.get_connection()?;
+        let geometry = conn.get_geometry(window_id)?.reply()?;
+
+        Ok(geometry)
+    }
+
     /// Listen for property changes on the root window
     pub fn listen_for_property_changes(
         &self,
@@ -146,9 +188,14 @@ impl XWayland {
     }
 
     /// Listen for window created events on the root window
+    #[deprecated(
+        since = "0.1.0",
+        note = "please use `listen_for_window_lifecycle` instead"
+    )]
     pub fn listen_for_window_created(
         &self,
     ) -> Result<(JoinHandle<()>, Receiver<u32>), Box<dyn std::error::Error>> {
+        #[allow(deprecated)]
         self.listen_for_window_created_on_window(self.root_window_id)
     }
 
@@ -156,6 +203,10 @@ impl XWayland {
     /// join handle of the listening thread and a receiver channel that can be
     /// used to receive property changes.
     /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    #[deprecated(
+        since = "0.1.0",
+        note = "please use `listen_for_window_lifecycle_on_window` instead"
+    )]
     pub fn listen_for_window_created_on_window(
         &self,
         window_id: u32,
@@ -163,6 +214,42 @@ impl XWayland {
         self.listen_for_window_changes(window_id, EventMask::SUBSTRUCTURE_NOTIFY, |_, tx, event| {
             if let x11rb::protocol::Event::CreateNotify(event) = event {
                 tx.send(event.window).unwrap();
+            }
+
+            Ok(())
+        })
+    }
+
+    /// Listen for window lifecycle events on the root window
+    pub fn listen_for_window_lifecycle(
+        &self,
+    ) -> Result<(JoinHandle<()>, Receiver<(WindowLifecycleEvent, u32)>), Box<dyn std::error::Error>>
+    {
+        self.listen_for_window_lifecycle_on_window(self.root_window_id)
+    }
+
+    /// Listen for window lifecycle event on the given window. Returns a
+    /// join handle of the listening thread and a receiver channel that can be
+    /// used to receive property changes.
+    /// https://stackoverflow.com/questions/60141048/get-notifications-when-active-x-window-changes-using-python-xlib
+    pub fn listen_for_window_lifecycle_on_window(
+        &self,
+        window_id: u32,
+    ) -> Result<(JoinHandle<()>, Receiver<(WindowLifecycleEvent, u32)>), Box<dyn std::error::Error>>
+    {
+        self.listen_for_window_changes(window_id, EventMask::SUBSTRUCTURE_NOTIFY, |_, tx, event| {
+            let (lifecycle_event, window) = match event {
+                x11rb::protocol::Event::CreateNotify(event) => {
+                    (WindowLifecycleEvent::Created, event.window)
+                }
+                x11rb::protocol::Event::DestroyNotify(event) => {
+                    (WindowLifecycleEvent::Destroyed, event.window)
+                }
+                _ => return Ok(()),
+            };
+
+            if let Err(err) = tx.send((lifecycle_event, window)) {
+                log::error!("Error sending window lifecycle event, err:{err:?}");
             }
 
             Ok(())
