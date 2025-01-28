@@ -30,6 +30,8 @@ pub enum GamescopeAtom {
     BlurRadius,
     #[strum(serialize = "GAMESCOPE_ALLOW_TEARING")]
     AllowTearing,
+    #[strum(serialize = "GAMESCOPE_XWAYLAND_MODE_CONTROL")]
+    ModeControl,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_WINDOW")]
     BaselayerWindow,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_APPID")]
