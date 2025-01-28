@@ -502,7 +502,13 @@ pub trait Primary {
     /// Request a screenshot from Gamescope
     fn request_screenshot(&self) -> Result<(), Box<dyn std::error::Error>>;
     /// Sets the display mode control for Gamescope
-    fn set_mode_control(&self, width: u32, height: u32, super_res: u32) -> Result<(), Box<dyn std::error::Error>>;
+    fn set_mode_control(
+        &self,
+        xwayland_id: u32,
+        width: u32,
+        height: u32,
+        super_res: u32
+    ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
 impl Primary for XWayland {
@@ -675,6 +681,7 @@ impl Primary for XWayland {
 
     fn set_mode_control(
         &self,
+        xwayland_id: u32,
         width: u32,
         height: u32,
         super_res: u32
@@ -682,7 +689,7 @@ impl Primary for XWayland {
         self.set_xprop(
             self.root_window_id,
             GamescopeAtom::ModeControl,
-            vec![self.root_window_id, width, height, super_res]
+            vec![xwayland_id, width, height, super_res]
         )
     }
 }
