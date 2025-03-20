@@ -59,25 +59,22 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
     let socks = fs::File::open("/proc/net/unix")?;
     let prefix = "/tmp/.X11-unix/X";
     for line in io::BufReader::new(socks).lines() {
-        // Get the 5th field, which is the socket path
-        let sock = match line.as_ref() {
-            Ok(line) => line.split_whitespace().last(),
-            Err(_) => {
-                continue;
-            }
+        let Ok(line) = line else {
+            continue;
         };
 
-        let sock = sock.unwrap();
+        // Get the 5th field, which is the socket path
+        let Some(sock) = line.split_whitespace().last() else {
+            continue;
+        };
+
         if !sock.starts_with(prefix) {
             continue;
         }
 
         // Get the path's suffix, which is our display name
-        let suffix = match sock.strip_prefix(prefix) {
-            Some(sock) => sock,
-            None => {
-                continue;
-            }
+        let Some(suffix) = sock.strip_prefix(prefix) else {
+            continue;
         };
 
         display_names.push(format!(":{}", suffix));
