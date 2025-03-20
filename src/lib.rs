@@ -1,4 +1,7 @@
-use std::fs;
+use std::{
+    fs,
+    io::{self, BufRead},
+};
 
 use x11rb::connection::Connection;
 
@@ -52,26 +55,30 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
     // Array of X11 displays
     let mut display_names: Vec<String> = Vec::new();
 
-    // X11 displays have a corresponding socket in /tmp/.X11-unix
-    // The sockets are named like: X0, X1, X2, etc.
-    let sockets = fs::read_dir("/tmp/.X11-unix")?;
+    // Find the all the sockets tracked by the kernel
+    let socks = fs::File::open("/proc/net/unix")?;
+    let prefix = "/tmp/.X11-unix/X";
+    for line in io::BufReader::new(socks).lines() {
+        // Get the 5th field, which is the socket path
+        let sock = match line.as_ref() {
+            Ok(line) => line.split_whitespace().last(),
+            Err(_) => {
+                continue;
+            }
+        };
 
-    // Loop through each socket file and derive the display number
-    for socket in sockets {
-        let dir_entry = &socket?;
-        let path = &dir_entry.path();
-
-        // Get the name of the socket (E.g. "X0") and get its suffix
-        // (E.g. "0")
-        let socket = path.file_name().unwrap().to_os_string();
-        let socket = socket.into_string();
-        let socket = &socket.unwrap();
-        let suffix = socket.strip_prefix('X').unwrap();
-
-        // Skip X11 sockets with weird names
-        if suffix.parse::<u64>().is_err() {
+        let sock = sock.unwrap();
+        if !sock.starts_with(prefix) {
             continue;
         }
+
+        // Get the path's suffix, which is our display name
+        let suffix = match sock.strip_prefix(prefix) {
+            Some(sock) => sock,
+            None => {
+                continue;
+            }
+        };
 
         display_names.push(format!(":{}", suffix));
     }
