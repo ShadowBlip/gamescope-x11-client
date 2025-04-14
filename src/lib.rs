@@ -55,7 +55,7 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
     // Array of X11 displays
     let mut display_names: Vec<String> = Vec::new();
 
-    // Find the all the sockets tracked by the kernel
+    // Find all the sockets tracked by the kernel
     let socks = fs::File::open("/proc/net/unix")?;
     let prefix = "/tmp/.X11-unix/X";
     for line in io::BufReader::new(socks).lines() {
@@ -63,7 +63,7 @@ pub fn discover_x11_displays() -> Result<Vec<String>, Box<dyn std::error::Error>
             continue;
         };
 
-        // Get the 5th field, which is the socket path
+        // Get the 8th field, which is the socket path
         let Some(sock) = line.split_whitespace().last() else {
             continue;
         };
