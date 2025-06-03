@@ -469,6 +469,11 @@ pub trait Primary {
         window_id: u32,
         value: u32,
     ) -> Result<(), Box<dyn std::error::Error>>;
+    /// Returns the currently set external overlay ID on the given window
+    fn get_external_overlay(
+        &self,
+        window_id: u32,
+    ) -> Result<Option<u32>, Box<dyn std::error::Error>>;
     /// Set the given window as an external overlay
     fn set_external_overlay(
         &self,
@@ -507,7 +512,7 @@ pub trait Primary {
         xwayland_id: u32,
         width: u32,
         height: u32,
-        super_res: u32
+        super_res: u32,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }
 
@@ -585,6 +590,13 @@ impl Primary for XWayland {
         value: u32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         self.set_xprop(window_id, GamescopeAtom::SteamNotification, vec![value])
+    }
+
+    fn get_external_overlay(
+        &self,
+        window_id: u32,
+    ) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        self.get_one_xprop(window_id, GamescopeAtom::ExternalOverlay)
     }
 
     fn set_external_overlay(
@@ -684,12 +696,12 @@ impl Primary for XWayland {
         xwayland_id: u32,
         width: u32,
         height: u32,
-        super_res: u32
+        super_res: u32,
     ) -> Result<(), Box<dyn std::error::Error>> {
         self.set_xprop(
             self.root_window_id,
             GamescopeAtom::ModeControl,
-            vec![xwayland_id, width, height, super_res]
+            vec![xwayland_id, width, height, super_res],
         )
     }
 }
