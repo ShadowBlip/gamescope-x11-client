@@ -20,7 +20,7 @@ where
     has_property(
         conn,
         root_window_id,
-        GamescopeAtom::CursorVisibleFeedback.to_string().as_str(),
+        GamescopeAtom::XwaylandServerId.to_string().as_str(),
     )
 }
 

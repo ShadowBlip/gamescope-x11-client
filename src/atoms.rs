@@ -16,6 +16,8 @@ pub enum GamescopeAtom {
     FocusableApps,
     #[strum(serialize = "GAMESCOPE_FOCUSABLE_WINDOWS")]
     FocusableWindows,
+    #[strum(serialize = "GAMESCOPE_FOCUS_DISPLAY")]
+    FocusDisplay,
     #[strum(serialize = "GAMESCOPE_KEYBOARD_FOCUS_DISPLAY")]
     KeyboardFocusDisplay,
     #[strum(serialize = "GAMESCOPE_CURSOR_VISIBLE_FEEDBACK")]
@@ -32,12 +34,16 @@ pub enum GamescopeAtom {
     AllowTearing,
     #[strum(serialize = "GAMESCOPE_XWAYLAND_MODE_CONTROL")]
     ModeControl,
+    #[strum(serialize = "GAMESCOPE_XWAYLAND_SERVER_ID")]
+    XwaylandServerId,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_WINDOW")]
     BaselayerWindow,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_APPID")]
     BaselayerAppId,
     #[strum(serialize = "GAMESCOPECTRL_REQUEST_SCREENSHOT")]
     RequestScreenshot,
+    #[strum(serialize = "GAMESCOPECTRL_DEBUG_REQUEST_SCREENSHOT")]
+    DebugRequestScreenshot,
     #[strum(serialize = "STEAM_GAME")]
     SteamGame,
     #[strum(serialize = "STEAM_INPUT_FOCUS")]
@@ -46,6 +52,10 @@ pub enum GamescopeAtom {
     SteamOverlay,
     #[strum(serialize = "STEAM_NOTIFICATION")]
     SteamNotification,
+    #[strum(serialize = "STEAM_STREAMING_CLIENT")]
+    SteamStreamingClient,
+    #[strum(serialize = "STEAM_STREAMING_CLIENT_VIDEO")]
+    SteamStreamingClientVideo,
 }
 
 #[cfg(test)]
