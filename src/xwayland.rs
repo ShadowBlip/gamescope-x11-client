@@ -490,6 +490,8 @@ pub trait Primary {
     fn get_blur_mode(&self) -> Result<Option<BlurMode>, Box<dyn std::error::Error>>;
     /// Sets the Gamescope blur radius when blur is active
     fn set_blur_radius(&self, radius: u32) -> Result<(), Box<dyn std::error::Error>>;
+    /// Gets the Gamescope blur radius
+    fn get_blur_radius(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
     /// Configures Gamescope to allow tearing or not
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>>;
     /// Returns the currently set manual app focus
@@ -621,7 +623,7 @@ impl Primary for XWayland {
             BlurMode::Cond => 1,
             BlurMode::Always => 2,
         };
-        self.set_xprop(self.root_window_id, GamescopeAtom::FPSLimit, vec![mode])
+        self.set_xprop(self.root_window_id, GamescopeAtom::BlurMode, vec![mode])
     }
 
     fn get_blur_mode(&self) -> Result<Option<BlurMode>, Box<dyn std::error::Error>> {
@@ -640,6 +642,10 @@ impl Primary for XWayland {
 
     fn set_blur_radius(&self, radius: u32) -> Result<(), Box<dyn std::error::Error>> {
         self.set_xprop(self.root_window_id, GamescopeAtom::BlurRadius, vec![radius])
+    }
+
+    fn get_blur_radius(&self) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        self.get_one_xprop(self.root_window_id, GamescopeAtom::BlurRadius)
     }
 
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>> {
