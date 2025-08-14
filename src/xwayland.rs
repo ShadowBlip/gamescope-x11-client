@@ -496,8 +496,12 @@ pub trait Primary {
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>>;
     /// Returns the currently set manual app focus
     fn get_baselayer_app_id(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
+    /// Returns the currently set manual app focus
+    fn get_baselayer_app_ids(&self) -> Result<Option<Vec<u32>>, Box<dyn std::error::Error>>;
     /// Focuses the app with the given app id
-    fn set_baselayer_app_id(&self, window_id: u32) -> Result<(), Box<dyn std::error::Error>>;
+    fn set_baselayer_app_id(&self, app_id: u32) -> Result<(), Box<dyn std::error::Error>>;
+    /// Focuses the app with the given app id
+    fn set_baselayer_app_ids(&self, app_ids: Vec<u32>) -> Result<(), Box<dyn std::error::Error>>;
     /// Removes the baselayer property to un-focus apps
     fn remove_baselayer_app_id(&self) -> Result<(), Box<dyn std::error::Error>>;
     /// Returns the currently set manual window focus
@@ -667,6 +671,14 @@ impl Primary for XWayland {
             GamescopeAtom::BaselayerAppId,
             vec![app_id],
         )
+    }
+
+    fn get_baselayer_app_ids(&self) -> Result<Option<Vec<u32>>, Box<dyn std::error::Error>> {
+        self.get_xprop(self.root_window_id, GamescopeAtom::BaselayerAppId)
+    }
+
+    fn set_baselayer_app_ids(&self, app_ids: Vec<u32>) -> Result<(), Box<dyn std::error::Error>> {
+        self.set_xprop(self.root_window_id, GamescopeAtom::BaselayerAppId, app_ids)
     }
 
     fn remove_baselayer_app_id(&self) -> Result<(), Box<dyn std::error::Error>> {
