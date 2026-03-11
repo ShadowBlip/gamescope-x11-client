@@ -36,6 +36,10 @@ pub enum GamescopeAtom {
     ModeControl,
     #[strum(serialize = "GAMESCOPE_XWAYLAND_SERVER_ID")]
     XwaylandServerId,
+    #[strum(serialize = "GAMESCOPE_DISPLAY_SUPPORTS_HDR")]
+    DisplaySupportsHdr,
+    #[strum(serialize = "GAMESCOPE_DISPLAY_HDR_ENABLED")]
+    DisplayHdrEnabled,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_WINDOW")]
     BaselayerWindow,
     #[strum(serialize = "GAMESCOPECTRL_BASELAYER_APPID")]

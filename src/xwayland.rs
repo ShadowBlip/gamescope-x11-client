@@ -492,6 +492,8 @@ pub trait Primary {
     fn set_blur_radius(&self, radius: u32) -> Result<(), Box<dyn std::error::Error>>;
     /// Gets the Gamescope blur radius
     fn get_blur_radius(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
+    /// Returns whether Gamescope allows for tearing
+    fn get_allow_tearing(&self) -> Result<bool, Box<dyn std::error::Error>>;
     /// Configures Gamescope to allow tearing or not
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>>;
     /// Returns the currently set manual app focus
@@ -520,6 +522,12 @@ pub trait Primary {
         height: u32,
         super_res: u32,
     ) -> Result<(), Box<dyn std::error::Error>>;
+    /// Toggles HDR
+    fn set_hdr_enabled(&self, enabled: bool) -> Result<(), Box<dyn std::error::Error>>;
+    /// Returns the current setting of HDR
+    fn get_hdr_enabled(&self) -> Result<bool, Box<dyn std::error::Error>>;
+    /// Returns whether the display supports HDR
+    fn get_hdr_support(&self) -> Result<bool, Box<dyn std::error::Error>>;
 }
 
 impl Primary for XWayland {
@@ -652,6 +660,11 @@ impl Primary for XWayland {
         self.get_one_xprop(self.root_window_id, GamescopeAtom::BlurRadius)
     }
 
+    fn get_allow_tearing(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::AllowTearing)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
     fn set_allow_tearing(&self, allow: bool) -> Result<(), Box<dyn std::error::Error>> {
         let value = if allow { 1 } else { 0 };
         self.set_xprop(
@@ -721,5 +734,24 @@ impl Primary for XWayland {
             GamescopeAtom::ModeControl,
             vec![xwayland_id, width, height, super_res],
         )
+    }
+
+    fn set_hdr_enabled(&self, enabled: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let value = if enabled { 1 } else { 0 };
+        self.set_xprop(
+            self.root_window_id,
+            GamescopeAtom::DisplayHdrEnabled,
+            vec![value],
+        )
+    }
+
+    fn get_hdr_enabled(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::DisplayHdrEnabled)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
+    fn get_hdr_support(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::DisplaySupportsHdr)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
     }
 }
