@@ -528,6 +528,18 @@ pub trait Primary {
     fn get_hdr_enabled(&self) -> Result<bool, Box<dyn std::error::Error>>;
     /// Returns whether the display supports HDR
     fn get_hdr_support(&self) -> Result<bool, Box<dyn std::error::Error>>;
+    /// Returns whether the display outputs the HDR content
+    fn get_hdr_output_feedback(&self) -> Result<bool, Box<dyn std::error::Error>>;
+    /// Returns the current target refresh rate of the screen
+    fn get_display_refresh_rate(&self) -> Result<Option<u32>, Box<dyn std::error::Error>>;
+    /// Returns whether the current display is external
+    fn get_display_is_external(&self) -> Result<bool, Box<dyn std::error::Error>>;
+    /// Toggles VRR
+    fn set_vrr_enabled(&self, enabled: bool) -> Result<(), Box<dyn std::error::Error>>;
+    /// Returns the current setting of VRR
+    fn get_vrr_enabled(&self) -> Result<bool, Box<dyn std::error::Error>>;
+    /// Returns whether the display supports VRR
+    fn get_vrr_support(&self) -> Result<bool, Box<dyn std::error::Error>>;
 }
 
 impl Primary for XWayland {
@@ -752,6 +764,39 @@ impl Primary for XWayland {
 
     fn get_hdr_support(&self) -> Result<bool, Box<dyn std::error::Error>> {
         let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::DisplaySupportsHdr)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
+    fn get_hdr_output_feedback(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value =
+            self.get_one_xprop(self.root_window_id, GamescopeAtom::DisplayHdrOutputFeedback)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
+    fn get_display_refresh_rate(&self) -> Result<Option<u32>, Box<dyn std::error::Error>> {
+        self.get_one_xprop(
+            self.root_window_id,
+            GamescopeAtom::DisplayRefreshRateFeedback,
+        )
+    }
+
+    fn get_display_is_external(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::DisplayIsExternal)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
+    fn set_vrr_enabled(&self, enabled: bool) -> Result<(), Box<dyn std::error::Error>> {
+        let value = if enabled { 1 } else { 0 };
+        self.set_xprop(self.root_window_id, GamescopeAtom::VrrEnabled, vec![value])
+    }
+
+    fn get_vrr_enabled(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::VrrEnabled)?;
+        Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
+    }
+
+    fn get_vrr_support(&self) -> Result<bool, Box<dyn std::error::Error>> {
+        let value = self.get_one_xprop(self.root_window_id, GamescopeAtom::VrrCapable)?;
         Ok(value.map(|enabled| enabled == 1).unwrap_or_default())
     }
 }
